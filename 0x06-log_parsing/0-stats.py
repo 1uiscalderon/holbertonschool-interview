@@ -1,41 +1,45 @@
 #!/usr/bin/python3
-""" Script that reads stdin line by line and computes metrics."""
-
-import sys
-
-dlist = {"size": 0,
-         "lines": 1}
-
-errors = {"200": 0, "301": 0, "400": 0, "401": 0,
-          "403": 0, "404": 0, "405": 0, "500": 0}
-
-
-def printf():
-    """ Print codes and numbers"""
-    print("File size: {}".format(dlist["size"]))
-    for key in sorted(errors.keys()):
-        if errors[key] != 0:
-            print("{}: {}".format(key, errors[key]))
-
-
-def datasize(data):
-    """ Count file codes and size"""
-    dlist["size"] += int(data[-1])
-    if data[-2] in errors:
-        errors[data[-2]] += 1
-
-
+"""
+    Reads stdin line by line and computes metrics:
+    For every 10 lines:
+        - print the status number with the number of times it
+        appears
+        - print the sum of the file sizes
+"""
 if __name__ == "__main__":
+    import sys
+    import signal
+
+    c = fileSize = 0
+    statCount = {"200": 0, "301": 0, "400": 0, "401": 0, "403": 0,
+                 "404": 0, "405": 0, "500": 0}
+
+    def handleTen(statCount, fileSize):
+        print("File size: {}".format(fileSize))
+        for key in sorted(statCount.keys()):
+            if statCount[key] == 0:
+                continue
+            print("{}: {}".format(key, statCount[key]))
+
     try:
         for line in sys.stdin:
+            c += 1
+            split = line.split(" ")
             try:
-                datasize(line.split(" "))
-            except:
+                status = split[-2]
+                fileSize += int(split[-1])
+
+                if status in statCount:
+                    statCount[status] += 1
+            except Exception:
                 pass
-            if dlist["lines"] % 10 == 0:
-                printf()
-            dlist["lines"] += 1
-    except KeyboardInterrupt:
-        printf()
+
+            if c % 10 == 0:
+                handleTen(statCount, fileSize)
+
+        else:
+            handleTen(statCount, fileSize)
+
+    except (KeyboardInterrupt, SystemExit):
+        handleTen(statCount, fileSize)
         raise
-    printf()
