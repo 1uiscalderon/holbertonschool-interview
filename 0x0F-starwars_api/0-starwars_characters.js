@@ -1,41 +1,32 @@
 #!/usr/bin/node
-// prints all characters of a Star Wars movie
+
 const request = require('request');
 
-function catchMainData (indexPage) {
-  const firstUrl = `https://swapi-api.hbtn.io/api/films/${indexPage}/`;
-  return new Promise((resolve, reject) => {
-    request(firstUrl, function (error, res, body) {
-      if (!error && res.statusCode === 200) {
-        resolve(body);
-      } else {
-        reject(error);
+async function sw (id) {
+  const url = `https://swapi-api.hbtn.io/api/films/${id}`;
+
+  request(url, async function (err, response, body) {
+    if (err) {
+      console.log(err);
+    } else {
+      for (const ch of JSON.parse(body).characters) {
+        const ret = () => {
+          return new Promise((resolve, reject) => {
+            request(ch, function (err, response, body) {
+              if (err) {
+                console.log(err);
+              } else {
+                resolve(JSON.parse(body).name);
+              }
+            });
+          });
+        };
+        console.log(await ret());
       }
-    });
+    }
   });
 }
 
-function catchPeople (character) {
-  return new Promise((resolve, reject) => {
-    request(character, (error, res, body) => {
-      if (!error && res.statusCode === 200) {
-        resolve(body);
-      } else {
-        reject(error);
-      }
-    });
-  });
+if (process.argv.length === 3) {
+  sw(process.argv[2]);
 }
-
-async function main () {
-  const argv = +process.argv[2];
-  const data = await catchMainData(argv);
-  const charactersFilms = JSON.parse(data).characters;
-
-  for (const i in charactersFilms) {
-    const people = await catchPeople(charactersFilms[i]);
-    console.log(JSON.parse(people).name);
-  }
-}
-
-main();
